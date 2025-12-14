@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Empilement de cubes</title>
+    <style>
+        body {
+            margin: 0;
+            background: #ddd;
+            font-family: Arial, sans-serif;
+            display: block;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 70vh;
+        }
+
+        #controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #f0f0f0cc;
+            padding: 10px 20px;
+            border-top: 2px solid #aaa;
+            display: flex;
+            gap: 20px;
+            user-select: none;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            z-index: 20;
+        }
+
+        label {
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 150px;
+        }
+
+        input[type=range] {
+            width: 150px;
+        }
+
+        button {
+            cursor: pointer;
+            padding: 3px 6px;
+            font-size: 11px;
+            border: 1px solid #999;
+            background: #eee;
+            border-radius: 3px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #ddd;
+        }
+
+        #gridContainer {
+            position: fixed;
+            top: 158px;
+            width: 242px;
+            left: 10px;
+            background: #fafafacc;
+            border: 1px solid #ccc;
+            padding: 10px;
+            z-index: 25;
+            user-select: none;
+            text-align: center;
+        }
+        #activiteContainer{
+            position: fixed;
+            top: 500px;
+            width: 242px;
+            left: 10px;
+            background: #fafafacc;
+            border: 1px solid #ccc;
+            padding: 10px;
+            z-index: 25;
+            user-select: none;
+            text-align: center;
+        }
+        #grid {
+            border-collapse: collapse;
+            user-select: none;
+            background: white;
+            z-index: 10;
+        }
+
+        #grid td {
+            width: 25px;
+            height: 25px;
+            border: 1px solid #333;
+            text-align: center;
+            vertical-align: middle;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+        }
+
+        #grid td:hover {
+            background-color: red;
+        }
+
+        #sideViewContainer {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #fafafacc;
+            border: 1px solid #ccc;
+            padding: 10px;
+            z-index: 25;
+            user-select: none;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        #sideViewGrid {
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+
+        #sideViewGrid td {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #666;
+        }
+
+        #gridControlsContainer {
+            font-size: 11px;
+            position: fixed;
+            top: 10px;
+            width: 242px;
+            left: 10px;
+            background: #fafafacc;
+            border: 1px solid #ccc;
+            padding: 10px;
+            z-index: 25;
+            user-select: none;
+            text-align: center;
+        }
+
+        #matSelector {
+            font-size: 11px;
+            max-width: 180px;
+        }
+
+        #sideViewContainer,
+        #sideViewSelector,
+        #gridContainer {
+            font-size: 11px;
+        }
+
+        #controls>label {
+            font-size: 11px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="gridControlsContainer">
+        Empilement : <select id="matSelector" style="margin-bottom:8px;">
+            <optgroup label="Divers"></optgroup>
+            <option value="5">quart de cube</option>
+            <option value="6">pyramide</option>
+            <option value="3">mini ville</option>
+            <option value="4">immeuble</option>
+            <option value="1" selected>mise en œuvre - exemple 1</option>
+            <option value="2">mise en œuvre - exemple 2</option>
+            </optgroup>
+            <optgroup label="Pavés"></optgroup>
+            <option value="7">cube 4 &times; 4 &times; 4</option>
+            <option value="8">pavé 5 &times; 3 &times; 2</option>
+            </optgroup>
+            <optgroup label="Utilisateur"></optgroup>
+            <option value="0">vide</option>
+            <option value="u">via l'URL</option>
+            </optgroup>
+        </select>
+        <button id="copyBtn" style="margin-bottom:8px;">Enregistrer l'image de l'empilement</button><br />
+        Couleurs des faces : <input id="sliderFaces" type="range" min="0" max="3" value="0" step="1"
+            style="width: 100px;vertical-align: middle;"><br />
+        Couleur du fond : <input id="sliderBg" type="range" min="0" max="255" value="0" step="1"
+            style="width: 100px;vertical-align: middle;margin-bottom:8px;"><br />
+        <button id="switchFloorBtn">Cacher le sol sous l'empilement</button>
+    </div>
+
+    <div id="gridContainer">
+        Couches : <input id="sliderCouches" type="range" min="0" max="8" value="8" step="1"
+            style="width: 160px;vertical-align: middle;margin-bottom:8px;"><br />
+        <table id="grid" style="margin: 5px auto 8px auto;"></table>
+        <button id="switchGridBtn">Cacher la grille</button>
+    </div>
+
+    <div id="activiteContainer">
+        <button id="urlBtn" style="margin-bottom:8px;" disabled>Copier l'URL de la situation actuelle</button><br />
+    </div>
+
+    <canvas id="threeCanvas"></canvas>
+
+    <div id="sideViewContainer">
+        Vue : <select id="sideViewSelector">
+            <option value="4">Avant</option>
+            <option value="5">Arrière</option>
+            <option value="2">Gauche</option>
+            <option value="3">Droite</option>
+            <option value="0">Dessus</option>
+            <option value="1">Dessous</option>
+            <option value="6" selected>Aucune</option>
+        </select>
+        <table id="sideViewGrid"></table><br />
+        <button id="sideViewGoBtn">📷 Position vue</button>
+    </div>
+
+    <div id="controls">
+        <button id="switchCameraBtn">📐 Projection orthographique</button>
+        <button id="resetBtn">Position initiale</button>
+        <label>
+            Rotation 1
+            <input id="sliderY" type="range" min="-180" max="180" value="0" step="0.1">
+
+        </label>
+        <label>
+            Rotation 2
+            <input id="sliderZ" type="range" min="-180" max="180" value="0" step="0.1">
+        </label>
+        <label>
+            Rotation 3
+            <input id="sliderX" type="range" min="-180" max="180" value="0" step="0.1">
+        </label>
+        <label>
+            Zoom
+            <input id="sliderZoom" type="range" min="10" max="40" value="35" step="0.1">
+        </label>
+    </div>
+
+    <script src="three.min.js"></script>
+
+    <script>
+
+        ////////////////////////////////////////////////////////////////////////
+        // raccourcis vers les éléments de la barre de contrôle et le sélecteur de vue orientée
+        ////////////////////////////////////////////////////////////////////////
+        const resetBtn = document.getElementById('resetBtn');
+        const sliderX = document.getElementById('sliderX');
+        const sliderY = document.getElementById('sliderY');
+        const sliderZ = document.getElementById('sliderZ');
+        const sliderZoom = document.getElementById('sliderZoom');
+        const sliderBg = document.getElementById('sliderBg');
+        const sliderCouches = document.getElementById('sliderCouches');
+        const sliderFaces = document.getElementById('sliderFaces');
+        const switchCameraBtn = document.getElementById('switchCameraBtn');
+        const matSelector = document.getElementById('matSelector');
+        const switchFloorBtn = document.getElementById('switchFloorBtn');
+        const switchGridBtn = document.getElementById('switchGridBtn');
+        const sideViewSelector = document.getElementById('sideViewSelector');
+        const copyBtn = document.getElementById('copyBtn');
+
+
+        ////////////////////////////////////////////////////////////////////////
+        // initialisation de l'empilement et récupération du paramètre empile
+        // ?empile=0000000000000000000010000211300000001000000010000001200000000000
+        ////////////////////////////////////////////////////////////////////////
+        const gridSize = 8;
+        const maxHeight = 8;
+        let gridData = [];
+        // Initialisation par défaut à 0
+        function resetGridData() {
+            for (let i = 0; i < gridSize; i++) {
+                gridData[i] = [];
+                for (let j = 0; j < gridSize; j++) {
+                    gridData[i][j] = 0;
+                }
+            }
+        }
+        resetGridData();
+        // Fonction pour lire le paramètre empile dans l’URL
+        function getEmpileFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const empile = params.get('empile');
+            if (empile && empile.length === 64 && /^[0-6]{64}$/.test(empile)) {
+                return empile;
+            }
+            return null;
+        }
+        // Si le paramètre empile est présent et valide, initialiser gridData avec
+        let empileStr = getEmpileFromUrl();
+        if (empileStr) {
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    gridData[i][j] = parseInt(empileStr[i * gridSize + j], 10);
+                }
+            }
+        }
+
+        // Choix d'un autre empilement
+        function updateEmpilement() {
+            const numEmpilement = matSelector.value;
+            switch (numEmpilement) {
+                case 'u': //utilisateur
+                    empileStr = getEmpileFromUrl();
+                    break;
+                case '1':// exemples mise en oeuvre 1
+                    empileStr = "0000000000000000001141000000100000001000000000000000000000000000";
+                    break;
+                case '2':// exemples mise en oeuvre 2
+                    empileStr = "0000000000345550002445500013445000123440001112300000000000000000";
+                    break;
+                case '3':// mini ville
+                    empileStr = "0000000002210230042101200110011001100000013202300111033000000000";
+                    break;
+                case '4':
+                    empileStr = "0000000000000000085642100210000001000110000011000111100000000000";
+                    break;
+                case '5':// quart de cube
+                    empileStr = "0000000000000000001234500001234000001230000001200000001000000000";
+                    break;
+                case '6': //pyramide
+                    empileStr = "0000000000010000001210000123210000121000000100000000000000000000";
+                    break;
+                case '7':// cube 4
+                    empileStr = "0000000000000000004444000044440000444400004444000000000000000000";
+                    break;
+                case '8': // pavé 5 3 2
+                    empileStr = "0000000000000000002222200022222000222220000000000000000000000000";
+                    break;
+                default:
+                    empileStr = "0000000000000000000000000000000000000000000000000000000000000000";
+                    break;
+            }
+            if (empileStr) {
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        gridData[i][j] = parseInt(empileStr[i * gridSize + j], 10);
+                    }
+                }
+            }
+            updateGridAndScene();
+        }
+
+
+        ////////////////////////////////////////////////////////////////////////
+        // création de la grille au sol et du comportement souris sur cette grille
+        ////////////////////////////////////////////////////////////////////////
+        const gridTable = document.getElementById('grid');
+        let highlightCubes = [];
+        let isGridVisible = true;
+        let currentRow = false;
+        let currentCol = false;
+
+        // fonction invoquée au clic de la souris sur la grille
+        function updateGridAndScene() {
+            createGridTable();
+            updateSideViewGrid();
+            buildStack();
+        }
+
+        function createGridTable() {
+            gridTable.innerHTML = '';
+            for (let row = 0; row < gridSize; row++) {
+                const tr = document.createElement('tr');
+                for (let col = 0; col < gridSize; col++) {
+                    const td = document.createElement('td');
+                    td.textContent = gridData[row][col];
+                    td.dataset.row = row;
+                    td.dataset.col = col;
+
+                    td.addEventListener('click', e => {
+                        e.preventDefault();
+                        if (gridData[currentRow][currentCol] < maxHeight) {
+                            gridData[currentRow][currentCol]++;
+                            updateGridAndScene();
+                        }
+                    });
+
+                    td.addEventListener('contextmenu', e => {
+                        e.preventDefault();
+                        if (gridData[currentRow][currentCol] > 0) {
+                            gridData[currentRow][currentCol]--;
+                            updateGridAndScene();
+                        }
+                    });
+
+
+                    td.addEventListener('mouseenter', () => {
+                        currentRow = +td.dataset.row;
+                        currentCol = +td.dataset.col;
+                        if (gridData[currentRow][currentCol] > 0) {
+                            highlightCubes = [];
+                            group.traverse(obj => {
+                                if (obj.isMesh && obj.geometry.type === "BoxGeometry") {
+                                    const pos = obj.position;
+                                    const matchX = pos.x === (currentCol - (gridSize - 1) / 2);
+                                    const matchZ = pos.z === (currentRow - (gridSize - 1) / 2);
+                                    const h = pos.y - 0.5;
+                                    if (matchX && matchZ && h < gridData[currentRow][currentCol]) {
+                                        obj.material = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // rouge de survol sur la grille
+                                        highlightCubes.push(obj);
+                                    }
+                                }
+                            });
+                        }
+                        updateSideViewGrid();
+                    });
+
+                    td.addEventListener('mouseleave', () => {
+                        highlightCubes.forEach(cube => cube.material = materials);
+                        highlightCubes = [];
+                        currentRow = false;
+                        currentCol = false;
+                        updateSideViewGrid();
+                    });
+
+                    tr.appendChild(td);
+                }
+                gridTable.appendChild(tr);
+            }
+        }
+
+        createGridTable();
+
+
+        ////////////////////////////////////////////////////////////////////////
+        // création de l'empilement à l'aide la librairie THREE
+        ////////////////////////////////////////////////////////////////////////
+        const canvas = document.getElementById('threeCanvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, preserveDrawingBuffer: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight * 0.7);
+        const scene = new THREE.Scene();
+        const colors = [[0xf5d742, 0x42f548, 0xc244b9, 0xf55d42, 0x5298fa, 0x919494],
+        [0x4479c2, 0x4479c2, 0x82aae0, 0x82aae0, 0xb8d6ff, 0xb8d6ff],
+        [0x999999, 0x999999, 0x888888, 0x888888, 0x777777, 0x777777],
+        [0xe8e8e8, 0xe8e8e8, 0xd9d9d9, 0xd9d9d9, 0xbfbfbf, 0xbfbfbf]
+        ];
+        let colorAvant = false;
+        let colorArriere = false;
+        let colorGauche = false;
+        let colorDroite = false;
+        let colorDessus = false;
+        let colorDessous = false;
+        let materials = false;
+        let jeuCouleur = 0;
+        let nbCouches = 8;
+
+        function setColors() {
+            colorAvant = colors[jeuCouleur][0];
+            colorArriere = colors[jeuCouleur][1];
+            colorGauche = colors[jeuCouleur][2];
+            colorDroite = colors[jeuCouleur][3];
+            colorDessus = colors[jeuCouleur][4];
+            colorDessous = colors[jeuCouleur][5];
+            materials = [
+                new THREE.MeshBasicMaterial({ color: colorDroite }),
+                new THREE.MeshBasicMaterial({ color: colorGauche }),
+                new THREE.MeshBasicMaterial({ color: colorDessus }),
+                new THREE.MeshBasicMaterial({ color: colorDessous }),
+                new THREE.MeshBasicMaterial({ color: colorAvant }),
+                new THREE.MeshBasicMaterial({ color: colorArriere })
+            ];
+        }
+        setColors()
+
+        const cameraLinear = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.7), 0.1, 1000);
+        const cameraOrtho = new THREE.OrthographicCamera();
+        const initialCameraPos = new THREE.Vector3(10, 15, 25);
+        cameraLinear.position.copy(initialCameraPos);
+        cameraLinear.lookAt(0, 0, 0);
+        cameraOrtho.position.copy(initialCameraPos);
+        cameraOrtho.lookAt(0, 0, 0);
+        let isOrthographic = true;
+        let currentCamera = cameraOrtho;
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        const cubeSize = 1;
+        let group = new THREE.Group();
+        scene.add(group);
+        let isFloorVisible = true;
+
+        function updateRotationFromSliders() {
+            const rx = parseFloat(sliderX.value);
+            const ry = parseFloat(sliderY.value);
+            const rz = parseFloat(sliderZ.value);
+            group.rotation.set(
+                THREE.MathUtils.degToRad(rx),
+                THREE.MathUtils.degToRad(ry),
+                THREE.MathUtils.degToRad(rz)
+            );
+        }
+
+        function buildStack() {
+            if (group) {
+                scene.remove(group);
+                group.traverse(obj => {
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.materials) obj.materials.dispose();
+                });
+            }
+            group = new THREE.Group();
+            group.position.y = -1;
+            scene.add(group);
+
+            for (let row = 0; row < gridSize; row++) {
+                for (let col = 0; col < gridSize; col++) {
+                    let height = gridData[row][col];
+                    if (height > nbCouches) height = nbCouches; // suppression des couches 
+                    for (let h = 0; h < height; h++) {
+                        const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+                        const cube = new THREE.Mesh(geometry, materials);
+
+                        cube.position.x = (col - (gridSize - 1) / 2) * cubeSize;
+                        cube.position.y = h * cubeSize + cubeSize / 2;
+                        cube.position.z = (row - (gridSize - 1) / 2) * cubeSize;
+                        group.add(cube);
+
+                        const edges = new THREE.EdgesGeometry(geometry);
+                        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+                        const lineSegments = new THREE.LineSegments(edges, lineMaterial);
+                        lineSegments.position.copy(cube.position);
+                        group.add(lineSegments);
+                    }
+                }
+            }
+
+            // tracé du rectangle au sol
+            if (isFloorVisible) {
+                const half = (gridSize - 1) / 2;
+                const points = [
+                    new THREE.Vector3(-half - 0.5, 0, -half - 0.5),
+                    new THREE.Vector3(half + 0.5, 0, -half - 0.5),
+                    new THREE.Vector3(half + 0.5, 0, half + 0.5),
+                    new THREE.Vector3(-half - 0.5, 0, half + 0.5),
+                    new THREE.Vector3(-half - 0.5, 0, -half - 0.5) // pour fermer le rectangle
+                ];
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const material = new THREE.LineBasicMaterial({ color: 0x000000 });
+                const outline = new THREE.Line(geometry, material);
+                group.add(outline);
+                // remplissage du rectangle au sol
+                const geometry2 = new THREE.PlaneGeometry(gridSize, gridSize);
+                const material2 = new THREE.MeshBasicMaterial({
+                    color: 0xf0f0f0,         // Couleur de fond souhaitée
+                    side: THREE.DoubleSide,  // Visible des deux côtés
+                    transparent: true, opacity: 0.6
+                });
+                const floor = new THREE.Mesh(geometry2, material2);
+                floor.rotation.x = -Math.PI / 2;  // Horizontal
+                floor.position.y = -0.05;        // Juste sous le niveau zéro des cubes
+                group.add(floor);
+            }
+
+            updateRotationFromSliders();
+        }
+        buildStack();
+
+        // fonction récursive qui provoque l'animation en continu
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, currentCamera);
+        }
+        animate();
+
+
+
+        ////////////////////////////////////////////////////////////////////////
+        // Gestion de la fenêtre de Vue orientée
+        ////////////////////////////////////////////////////////////////////////
+        const sideViewGrid = document.getElementById('sideViewGrid');
+        const sideViewGoBtn = document.getElementById('sideViewGoBtn');
+        sideViewGoBtn.disabled = true;
+        let isMoveToView = true;
+
+        // Fonction utilitaire pour construire une matrice initialisée
+        function createMatrix(rows, cols, defaultVal = null) {
+            const mat = [];
+            for (let i = 0; i < rows; i++) {
+                mat.push(new Array(cols).fill(defaultVal));
+            }
+            return mat;
+
+        }
+
+        // Calcul des vues secondaires selon la sélection
+        // On renvoie une matrice 2D avec couleurs ou null
+        function computeSideView(view) {
+            if (view === 6) return createMatrix(gridSize, gridSize, null);
+
+            const mat = createMatrix(gridSize, gridSize, null);
+
+            const gridDataNbCouches = gridData.map(ligne =>
+                ligne.map(valeur => Math.min(valeur, nbCouches))
+            );
+
+            if (view === 0) { // Dessus 
+                for (let r = 0; r < gridSize; r++) {
+                    for (let c = 0; c < gridSize; c++) {
+                        const h = gridDataNbCouches[r][c];
+                        if (h > 0) mat[r][c] = colorDessus;
+                    }
+                }
+            } else if (view === 1) { // Dessous 
+                for (let r = 0; r < gridSize; r++) {
+                    for (let c = 0; c < gridSize; c++) {
+                        const h = gridDataNbCouches[gridSize - 1 - r][c];
+                        if (h > 0) mat[r][c] = colorDessous;
+                    }
+                }
+            } else if (view === 2) { // Gauche 
+                for (let c = 0; c < gridSize; c++) {
+                    let h = 0;
+                    for (let r = 0; r < gridSize; r++) {
+                        if (gridDataNbCouches[c][r] > h) h = gridDataNbCouches[c][r];
+                    }
+                    for (let r = 0; r < h; r++) {
+                        mat[gridSize - 1 - r][c] = colorGauche;
+                    }
+                }
+            } else if (view === 3) { // Droite 
+                for (let c = 0; c < gridSize; c++) {
+                    let h = 0;
+                    for (let r = 0; r < gridSize; r++) {
+                        if (gridDataNbCouches[c][r] > h) h = gridDataNbCouches[c][r];
+                    }
+                    for (let r = 0; r < h; r++) {
+                        mat[gridSize - 1 - r][gridSize - 1 - c] = colorDroite;
+                    }
+                }
+            } else if (view === 4) { // Avant 
+                for (let r = 0; r < gridSize; r++) {
+                    let h = 0;
+                    for (let c = 0; c < gridSize; c++) {
+                        if (gridDataNbCouches[c][r] > h) h = gridDataNbCouches[c][r];
+                    }
+                    for (let c = 0; c < h; c++) {
+                        mat[gridSize - 1 - c][r] = colorAvant;
+                    }
+                }
+            } else if (view === 5) { // Arrière 
+                for (let r = 0; r < gridSize; r++) {
+                    let h = 0;
+                    for (let c = 0; c < gridSize; c++) {
+                        if (gridDataNbCouches[c][r] > h) h = gridDataNbCouches[c][r];
+                    }
+                    for (let c = 0; c < h; c++) {
+                        mat[gridSize - 1 - c][gridSize - 1 - r] = colorArriere;
+                    }
+                }
+            }
+
+            return mat;
+        }
+
+        // gestionnaire de la vue orientée
+        function updateSideViewGrid(changeBTn = false) {
+
+            sideViewGrid.innerHTML = '';
+            const selectedView = +sideViewSelector.value;
+            let maxNiveauxPiles = 0;
+
+            // gestion du bouton Déplacer à la vue
+            if (changeBTn) {
+                if (selectedView < 6) {
+                    sideViewGoBtn.disabled = false;
+                    isMoveToView = true;
+                    sideViewGoBtn.textContent = "📷 Position vue";
+                    sideViewGoBtn.disabled = false;
+                }
+                else {
+                    if (isMoveToView) {
+                        sideViewGoBtn.disabled = true;
+                    }
+                }
+            }
+
+            // affichage de la vue
+            const mat = computeSideView(selectedView);
+
+            // calculs préliminaires en cas de pîle survolée via la grille
+            if (currentRow !== false && currentCol !== false && gridData[currentRow][currentCol] > 0) {
+                maxNiveauxPiles = 8;
+                switch (selectedView) {
+                    case 2: // gauche
+                        for (let cGrid = 0; cGrid < currentCol; cGrid++) {
+                            if ((8 - gridData[currentRow][cGrid]) < maxNiveauxPiles) {
+                                maxNiveauxPiles = 8 - gridData[currentRow][cGrid];
+                            }
+                        }
+                        break;
+                    case 3: // droite
+                        for (let cGrid = 7; cGrid > currentCol; cGrid--) {
+                            if ((8 - gridData[currentRow][cGrid]) < maxNiveauxPiles) {
+                                maxNiveauxPiles = 8 - gridData[currentRow][cGrid];
+                            }
+                        }
+                        break;
+                    case 4: // avant
+                        for (let rGrid = 7; rGrid > currentRow; rGrid--) {
+                            if ((8 - gridData[rGrid][currentCol]) < maxNiveauxPiles) {
+                                maxNiveauxPiles = 8 - gridData[rGrid][currentCol];
+                            }
+                        }
+                        break;
+                    case 5: // arrière
+
+                        for (let rGrid = 0; rGrid < currentRow; rGrid++) {
+                            if ((8 - gridData[rGrid][currentCol]) < maxNiveauxPiles) {
+                                maxNiveauxPiles = 8 - gridData[rGrid][currentCol];
+                            }
+                        }
+                        break;
+                }
+            }
+
+            // affichage de la vue
+            for (let r = 0; r < 8; r++) {
+                const tr = document.createElement('tr');
+                for (let c = 0; c < 8; c++) {
+                    const td = document.createElement('td');
+                    if (mat[r][c] !== null) {
+                        // couleur par défaut dans la vue
+                        td.style.backgroundColor = '#' + mat[r][c].toString(16).padStart(6, '0');
+                        // couleur rouge pour les cubes visibles de la pîle survolée via la grille
+                        if (currentRow !== false && currentCol !== false && gridData[currentRow][currentCol] > 0)
+                            switch (selectedView) {
+                                case 0: // dessus
+                                    if (r == currentRow && c == currentCol) {
+                                        td.style.backgroundColor = 'red';
+                                    }
+                                    break;
+                                case 1: // dessous
+                                    if ((7 - r) == currentRow && c == currentCol) {
+                                        td.style.backgroundColor = 'red';
+                                    }
+                                    break;
+                                case 2: // gauche
+                                    if (c == currentRow && r < maxNiveauxPiles && r >= 8 - gridData[currentRow][currentCol]) {
+                                        td.style.backgroundColor = 'red';
+                                    }
+                                    break;
+                                case 3: // droite
+                                    if ((7 - c) == currentRow && r < maxNiveauxPiles && r >= 8 - gridData[currentRow][currentCol]) {
+                                        td.style.backgroundColor = 'red';
+                                    }
+                                    break;
+                                case 4: // avant
+                                    if (c == currentCol && r < maxNiveauxPiles && r >= 8 - gridData[currentRow][currentCol]) {
+                                        td.style.backgroundColor = 'red';
+                                    }
+                                    break;
+                                case 5: // arrière
+                                    if ((7 - c) == currentCol && r < maxNiveauxPiles && r >= 8 - gridData[currentRow][currentCol]) {
+                                        td.style.backgroundColor = 'red';
+                                    }
+                                    break;
+                            }
+                    } else {
+                        td.style.backgroundColor = 'white';
+                    }
+                    tr.appendChild(td);
+                }
+                sideViewGrid.appendChild(tr);
+            }
+        }
+
+        // fonction invoquée au changement de vue orientée
+        sideViewSelector.addEventListener('change', () => updateSideViewGrid(true));
+
+        updateSideViewGrid(true);
+
+        ////////////////////////////////////////////////////////////////////////
+        // gestion de la barre de contrôle et du resize de la fenêtre navigateur
+        ////////////////////////////////////////////////////////////////////////
+        const sliderZoomDefault = sliderZoom.value;
+        let oldViewPosition = { 'X': 0, 'Y': 0, 'Z': 0 };
+        let newViewPosition = { 'X': 0, 'Y': 0, 'Z': 0 };
+        let currentViewPosition = { 'X': 0, 'Y': 0, 'Z': 0 };
+
+        function updateRotation(isFromUserControl) {
+            group.rotation.x = THREE.MathUtils.degToRad(sliderX.value);
+            group.rotation.y = THREE.MathUtils.degToRad(sliderY.value);
+            group.rotation.z = THREE.MathUtils.degToRad(sliderZ.value);
+            if (isFromUserControl) currentViewPosition = { 'X': Number(sliderX.value), 'Y': Number(sliderY.value), 'Z': Number(sliderZ.value) };
+        }
+        sliderX.addEventListener('input', () => updateRotation(true));
+        sliderY.addEventListener('input', () => updateRotation(true));
+        sliderZ.addEventListener('input', () => updateRotation(true));
+
+        function updateZoom() {
+            const zoomDistance = parseFloat(sliderZoom.max) - parseFloat(sliderZoom.value);
+            if (!isOrthographic) {
+                const dir = initialCameraPos.clone().normalize();
+                cameraLinear.position.copy(dir.multiplyScalar(zoomDistance));
+                cameraLinear.lookAt(0, 0, 0);
+            } else {
+                const aspect = window.innerWidth / (window.innerHeight * 0.7);
+                cameraOrtho.left = -zoomDistance * aspect;
+                cameraOrtho.right = zoomDistance * aspect;
+                cameraOrtho.top = zoomDistance;
+                cameraOrtho.bottom = -zoomDistance;
+                cameraOrtho.updateProjectionMatrix();
+            }
+        }
+        sliderZoom.addEventListener('input', updateZoom);
+        updateZoom();
+
+        // action sur le curseur d'arrière plan
+        function updateBackground() {
+            const val = 255 - parseInt(sliderBg.value);
+            const color = `rgb(${val},${val},${val})`;
+            document.body.style.background = color;
+            canvas.style.background = color;
+            const hex = (val << 16) + (val << 8) + val;
+            renderer.setClearColor(hex);
+        }
+        sliderBg.addEventListener('input', updateBackground);
+        updateBackground();
+
+        // action sur le curseur de couleur des faces
+        function updateFaces() {
+            jeuCouleur = parseInt(sliderFaces.value);
+            setColors();
+            buildStack();
+            updateRotation(true);
+            updateZoom();
+            updateBackground();
+            updateSideViewGrid();
+        }
+        sliderFaces.addEventListener('input', updateFaces);
+        updateFaces();
+
+        // action sur le curseur de couleur des faces
+        function updateCouches() {
+            nbCouches = parseInt(sliderCouches.value);
+            setColors();
+            buildStack();
+            updateRotation(true);
+            updateZoom();
+            updateBackground();
+            updateSideViewGrid();
+        }
+        sliderCouches.addEventListener('input', updateCouches);
+        updateCouches();
+
+        // fonction invoquée à l'appui sur le bouton Initialiser
+        resetBtn.addEventListener('click', () => {
+            sliderX.value = 0;
+            sliderY.value = 0;
+            sliderZ.value = 0;
+            sliderZoom.value = sliderZoomDefault;
+            updateRotation(true);
+            updateZoom();
+            updateBackground();
+            updateSideViewGrid(true);
+        });
+
+        // fonction invoquée à l'appui sur le bouton Projection orthographique / Projection linéaire
+        switchCameraBtn.addEventListener('click', () => {
+            isOrthographic = !isOrthographic;
+            currentCamera = isOrthographic ? cameraOrtho : cameraLinear;
+            switchCameraBtn.textContent = isOrthographic ? "📐 Projection orthographique" : "🎥 Projection linéaire";
+            // dispartion du déplacement à la vue en projection linéaire
+            const selectedView = +sideViewSelector.value;
+            if (!isOrthographic) sideViewGoBtn.disabled = true;
+            else sideViewGoBtn.disabled = (selectedView < 6) ? false : true;
+            // mise à jour de la projection
+            updateZoom();
+            currentCamera.position.copy(initialCameraPos);
+            currentCamera.lookAt(0, 0, 0);
+        });
+
+        // fonction invoquée à l'appui sur le bouton Copier
+        copyBtn.addEventListener('click', () => {
+
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+
+            tempCtx.fillStyle = 'white';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            tempCtx.drawImage(canvas, 0, 0);
+
+            // Détecter les limites du contenu
+            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            const data = imageData.data;
+
+            let minX = tempCanvas.width;
+            let minY = tempCanvas.height;
+            let maxX = 0;
+            let maxY = 0;
+
+            // Parcourir tous les pixels pour trouver ceux qui ne sont pas blancs
+            for (let y = 0; y < tempCanvas.height; y++) {
+                for (let x = 0; x < tempCanvas.width; x++) {
+                    const index = (y * tempCanvas.width + x) * 4;
+                    const r = data[index];
+                    const g = data[index + 1];
+                    const b = data[index + 2];
+
+                    // Si le pixel n'est pas blanc (avec une petite tolerance)
+                    if (r < 250 || g < 250 || b < 250) {
+                        minX = Math.min(minX, x);
+                        minY = Math.min(minY, y);
+                        maxX = Math.max(maxX, x);
+                        maxY = Math.max(maxY, y);
+                    }
+                }
+            }
+
+            // Ajouter une marge
+            const marge = 20;
+            minX = Math.max(0, minX - marge);
+            minY = Math.max(0, minY - marge);
+            maxX = Math.min(tempCanvas.width - 1, maxX + marge);
+            maxY = Math.min(tempCanvas.height - 1, maxY + marge);
+
+            const largeur = maxX - minX + 1;
+            const hauteur = maxY - minY + 1;
+
+            // Créer le canvas final recadré
+            const canvasFinal = document.createElement('canvas');
+            const ctxFinal = canvasFinal.getContext('2d');
+
+            canvasFinal.width = largeur;
+            canvasFinal.height = hauteur;
+
+            // Fond blanc pour le canvas final
+            ctxFinal.fillStyle = 'white';
+            ctxFinal.fillRect(0, 0, largeur, hauteur);
+
+            // Copier la partie pertinente
+            ctxFinal.drawImage(
+                tempCanvas,
+                minX, minY, largeur, hauteur,  // Source
+                0, 0, largeur, hauteur         // Destination
+            );
+
+            // Télécharger l'image recadrée
+            const dataURL = canvasFinal.toDataURL("image/jpeg", 0.9);
+            const lien = document.createElement("a");
+            lien.href = dataURL;
+            lien.download = "Image de l'empilement.jpeg";
+            document.body.appendChild(lien);
+            lien.click();
+            document.body.removeChild(lien);
+
+        });
+
+        // fonction invoquée à l'appui sur le bouton Déplacer à la vue / Revenir
+        sideViewGoBtn.addEventListener('click', () => {
+            const duration = 1500; // 2 secondes en ms
+            let startTime = null;
+
+            // désactivation du bouton durant l'animation
+            sideViewGoBtn.disabled = true;
+
+            oldViewPosition = { 'X': Number(sliderX.value), 'Y': Number(sliderY.value), 'Z': Number(sliderZ.value) };
+            // si on a cliqué sur le bouton 📷 Aller à la vue
+            if (isMoveToView) {
+                switch (sideViewSelector.value) {
+                    case '0': newViewPosition = { 'X': 63, 'Y': 10, 'Z': -19 }; break; // vue dessus
+                    case '1': newViewPosition = { 'X': -117, 'Y': -10, 'Z': 19 }; break; // vue dessous
+                    case '2': newViewPosition = { 'X': -1, 'Y': 111.5, 'Z': -28 }; break; // vue gauche
+                    case '3': newViewPosition = { 'X': -1, 'Y': -68.5, 'Z': 28 }; break; // vue droite
+                    case '4': newViewPosition = { 'X': -31, 'Y': 19, 'Z': 11 }; break; // vue avant
+                    case '5': newViewPosition = { 'X': -31, 'Y': -161, 'Z': -11 }; break; // vue arrière
+                    default: newViewPosition = { 'X': 0, 'Y': 0, 'Z': 0 }; break; // position initiale
+                }
+            }
+            // si on a cliqué sur le bouton ↩ Revenir 
+            else {
+                newViewPosition = currentViewPosition;
+            }
+
+            // fonction récursive d'animation avec gestion de fin d'animation
+            function animateRotation(timestamp) {
+                const selectedView = +sideViewSelector.value;
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const t = Math.min(elapsed / duration, 1);
+                // interpolation linéaire
+                sliderX.value = oldViewPosition.X + t * (newViewPosition.X - oldViewPosition.X);
+                sliderY.value = oldViewPosition.Y + t * (newViewPosition.Y - oldViewPosition.Y);
+                sliderZ.value = oldViewPosition.Z + t * (newViewPosition.Z - oldViewPosition.Z);
+                updateRotation(false);
+                if (t < 1) requestAnimationFrame(animateRotation);
+                else {
+                    isMoveToView = !isMoveToView;
+                    sideViewGoBtn.textContent = isMoveToView ? "📷 Position vue" : "↩ Position utilisateur";
+                    if (selectedView < 6) sideViewGoBtn.disabled = false;
+                }
+            }
+            // on invoque la fonction récursive pour lancer l'animation
+            requestAnimationFrame(animateRotation);
+
+        });
+
+
+        // fonction invoquée à l'appui sur le bouton Sol visible / Sol invisible
+        switchFloorBtn.addEventListener('click', () => {
+            isFloorVisible = !isFloorVisible;
+            switchFloorBtn.textContent = isFloorVisible ? "Cacher le sol sous l'empilement" : "Voir le sol sous l'empilement";
+            buildStack();
+        });
+
+        // fonction invoquée à l'appui sur le bouton Cacher la grille / Voir la grille
+        switchGridBtn.addEventListener('click', () => {
+            isGridVisible = !isGridVisible;
+            switchGridBtn.textContent = isGridVisible ? "Cacher la grille" : "Voir la grille";
+            if (!isGridVisible) gridTable.hidden = true;
+            else gridTable.hidden = false;
+        });
+
+        // fonction invoquée au changement d'empilement'
+        matSelector.addEventListener('change', updateEmpilement);
+
+        // fonction invoquée au resize de la fenêtre du navigateur 
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight * 0.7);
+            cameraLinear.aspect = window.innerWidth / (window.innerHeight * 0.7);
+            cameraLinear.updateProjectionMatrix();
+        });
+
+        updateEmpilement();
+    </script>
+</body>
+
+</html>
